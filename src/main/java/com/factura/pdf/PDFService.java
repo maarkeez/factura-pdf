@@ -17,9 +17,10 @@ public class PDFService {
 
 	private static final PDFService singleton = new PDFService();
 	private static final float WIDTH_MARGIN = 5;
-	private static final float LINE_DELIMITER = 10;
+	private static final float LINE_DELIMITER = 12;
 	private float actualHeight;
 	private float width;
+	private Color headerColor = Color.decode("#98CB98");// #5FABAF");
 
 	public static PDFService singleton() {
 		return singleton;
@@ -38,11 +39,15 @@ public class PDFService {
 
 		addInfo(title, document);
 		addHeader(contentStream);
-		addText(contentStream);
-		addText(contentStream);
 
-		List<String> fila = Arrays.asList("caca1", "caca2", "caca3");
-		List<String> headers = new ArrayList<String>(Arrays.asList("caca1", "caca2", "caca3"));
+		decreaseActualHeight(0);
+		decreaseActualHeight(0);
+		decreaseActualHeight(0);
+
+		addClientData(contentStream);
+
+		List<String> headers = Arrays.asList("Descripción", "Precio unidad", "Cantidad", "Precio total");
+		List<String> fila = new ArrayList<String>(Arrays.asList("Transporte de moto (Madrid - Alicante)", "1.000 €", "1", "1.000 €"));
 		List<List<String>> body = new ArrayList<List<String>>();
 		body.add(fila);
 		body.add(fila);
@@ -58,12 +63,35 @@ public class PDFService {
 
 		PDFTable table = new PDFTable(headers, body);
 		addTable(table, contentStream);
-		addText(contentStream);
 
 		contentStream.close();
 
 		document.save(path);
 		document.close();
+
+	}
+
+	private void addClientData(PDPageContentStream contentStream) throws IOException {
+
+		float widthDelimiter = 10;
+		addText(contentStream, "Factura para", WIDTH_MARGIN + widthDelimiter, getActualHeight(), headerColor, 10);
+		addText(contentStream, "David Márquez Delgado", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER, Color.BLACK, 10);
+		addText(contentStream, "c/Greco, nº 2, Bajo Izquierda", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 2, Color.BLACK, 10);
+		addText(contentStream, "Getafe (Madrid), España", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 3, Color.BLACK, 10);
+		addText(contentStream, "28904", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 4, Color.BLACK, 10);
+
+		widthDelimiter += 200;
+		addText(contentStream, "Número de factura", WIDTH_MARGIN + widthDelimiter, getActualHeight(), headerColor, 10);
+		addText(contentStream, "2018070613145555", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER, Color.BLACK, 10);
+		addText(contentStream, "", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 2, Color.BLACK, 10);
+		addText(contentStream, "Fecha de emisión", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 3, headerColor, 10);
+		addText(contentStream, "06/07/2018", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 4, Color.BLACK, 10);
+
+		widthDelimiter += 380;
+		addTextRight(contentStream, "Total factura", WIDTH_MARGIN + widthDelimiter, getActualHeight(), headerColor, 10);
+		addTextRight(contentStream, "4.200,34 €", WIDTH_MARGIN + widthDelimiter, getActualHeight() - LINE_DELIMITER * 2, headerColor, 20);
+
+		decreaseActualHeight(LINE_DELIMITER * 7);
 
 	}
 
@@ -78,51 +106,50 @@ public class PDFService {
 	private void addHeader(PDPageContentStream contentStream) throws IOException {
 
 		// Setting the non stroking color
-		contentStream.setNonStrokingColor(Color.DARK_GRAY);
+		contentStream.setNonStrokingColor(headerColor);
 
 		// Drawing a rectangle for header
-		float headerWidth = width - 2 * WIDTH_MARGIN;
-		float headerHeight = 50;
+		float headerWidth = width;
+		float headerHeight = 80;
+		contentStream.addRect(0, getActualHeight() - headerHeight, headerWidth, headerHeight);
+		contentStream.fill();
 
-		contentStream.addRect(WIDTH_MARGIN, getActualHeight() - headerHeight, headerWidth, headerHeight);
+		// Drawing Text on header
+		// Title
+		int text_height_start = 50;
+		addText(contentStream, "Factura", WIDTH_MARGIN + 10, getActualHeight() - text_height_start, Color.WHITE, 30);
+
+		// Company information
+		text_height_start -= 15;
+		int width_delimiter = 420;
+		addTextRight(contentStream, "652 966 851", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start, Color.WHITE, 10);
+		addTextRight(contentStream, "Email", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start - LINE_DELIMITER, Color.WHITE, 10);
+		addTextRight(contentStream, "Web site", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start - LINE_DELIMITER * 2, Color.WHITE, 10);
+
+		width_delimiter = width_delimiter + 170;
+		addTextRight(contentStream, "c/Greco, nº 2, Bajo Izquierda", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start, Color.WHITE, 10);
+		addTextRight(contentStream, "Getafe (Madrid), España", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start - LINE_DELIMITER, Color.WHITE, 10);
+		addTextRight(contentStream, "28904", WIDTH_MARGIN + width_delimiter, getActualHeight() - text_height_start - LINE_DELIMITER * 2, Color.WHITE, 10);
 
 		decreaseActualHeight(headerHeight);
 
-		// Drawing a rectangle
-		contentStream.fill();
 		contentStream.setNonStrokingColor(Color.BLACK);
 
 	}
 
-	private void addText(PDPageContentStream contentStream) throws IOException {
-		// Begin the Content stream
-		contentStream.beginText();
-
-		// Setting the font to the Content stream
-		contentStream.setFont(PDType1Font.HELVETICA, 10);
-
-		// Setting the position for the line
-		contentStream.newLineAtOffset(WIDTH_MARGIN, getActualHeight());
+	private void addText(PDPageContentStream contentStream, String text) throws IOException {
+		addText(contentStream, text, WIDTH_MARGIN, getActualHeight(), Color.BLACK, 10);
 		decreaseActualHeight(0);
-		String text = "This is the sample document and we are adding content to it.";
-
-		// Adding text in the form of string
-		contentStream.showText(text);
-
-		// Ending the content stream
-		contentStream.endText();
-
 	}
 
-	private void addTableText(PDPageContentStream contentStream, String text, float x, float y) throws IOException {
-		contentStream.setNonStrokingColor(Color.BLACK);
+	private void addText(PDPageContentStream contentStream, String text, float x, float y, Color color, int textSize) throws IOException {
+		contentStream.setNonStrokingColor(color);
 
 		// Begin the Content stream
 		contentStream.beginText();
 
 		// Setting the font to the Content stream
-		contentStream.setFont(PDType1Font.HELVETICA, 10);
-
+		contentStream.setFont(PDType1Font.HELVETICA, textSize);
 		// Setting the position for the line
 		contentStream.newLineAtOffset(x, y);
 
@@ -133,6 +160,35 @@ public class PDFService {
 		contentStream.endText();
 
 	}
+
+	private void addTextRight(PDPageContentStream contentStream, String text, float x, float y, Color color, int textSize) throws IOException {
+		contentStream.setNonStrokingColor(color);
+
+		// Begin the Content stream
+		contentStream.beginText();
+
+		// Setting the font to the Content stream
+		PDType1Font font = PDType1Font.HELVETICA;
+		contentStream.setFont(PDType1Font.HELVETICA, textSize);
+		// Setting the position for the line
+		float textWidth = getTextWidth(font, textSize, text);
+		contentStream.newLineAtOffset(x - textWidth, y);
+
+		// Adding text in the form of string
+		contentStream.showText(text);
+
+		// Ending the content stream
+		contentStream.endText();
+
+	}
+
+	private static float getTextWidth(PDType1Font font, int fontSize, String text) throws IOException {
+		return (font.getStringWidth(text) / 1000.0f) * fontSize;
+	}
+
+	// private void addTableText(PDPageContentStream contentStream, String text, float x, float y) throws IOException {
+	// addText(contentStream, text, x, y, Color.BLACK, 10);
+	// }
 
 	private void decreaseActualHeight(float y) {
 		y = y + LINE_DELIMITER;
@@ -148,43 +204,82 @@ public class PDFService {
 	}
 
 	private void addTable(PDFTable table, PDPageContentStream contentStream) throws IOException {
+		addHeaders(table, contentStream);
+		addBody(table, contentStream);
+		addTotals(table, contentStream);
+		contentStream.setNonStrokingColor(Color.BLACK);
+		decreaseActualHeight(0);
+	}
+
+	private void addHeaders(PDFTable table, PDPageContentStream contentStream) throws IOException {
 		float cellHeight = 20;
 		float lineWidth = 1;
 		int numberOfCells = table.getColsCount();
 		float cellWidth = (this.width - WIDTH_MARGIN * 2) / numberOfCells;
+		float firstCellWidth = 300;
 
 		// Añadir cabecera
-		float x_head = WIDTH_MARGIN;
+		float x_head = WIDTH_MARGIN + 10;
 		float y_head = getActualHeight() - cellHeight;
 		for (int i = 0; i < numberOfCells; i++) {
-			contentStream.addRect(x_head, y_head, cellWidth, cellHeight);
+			if (i == 0) {
+				cellWidth = firstCellWidth;
+			} else {
+
+				cellWidth = (this.width - 20 - WIDTH_MARGIN * 2 - firstCellWidth) / (numberOfCells - 1);
+			}
+
+			contentStream.addRect(x_head, y_head, cellWidth, 1);
 			contentStream.setLineWidth(lineWidth);
 			contentStream.setNonStrokingColor(Color.WHITE);
-			contentStream.setStrokingColor(Color.BLACK);
+			contentStream.setStrokingColor(headerColor);
 			contentStream.stroke();
 
-			addTableText(contentStream, table.getHeaders().get(i), x_head + 2, y_head + 5);
+			if (i == 0) {
+				addText(contentStream, table.getHeaders().get(i), x_head + 2, y_head + 5, headerColor, 10);
+			} else {
+				addTextRight(contentStream, table.getHeaders().get(i), cellWidth + x_head - 2, y_head + 5, headerColor, 10);
+			}
 
 			x_head += cellWidth;
 		}
 		decreaseActualHeightWithoutDel(cellHeight);
 		contentStream.fill();
+	}
+
+	private void addBody(PDFTable table, PDPageContentStream contentStream) throws IOException {
+		float cellHeight = 20;
+		float lineWidth = 1;
+		int numberOfCells = table.getColsCount();
+		float cellWidth = (this.width - WIDTH_MARGIN * 2) / numberOfCells;
+		float firstCellWidth = 300;
 
 		// Añadir cuerpo
 		for (int rowCount = 0; rowCount < table.getRowsCount(); rowCount++) {
 
-			float x = WIDTH_MARGIN;
+			float x = WIDTH_MARGIN + 10;
 			float y = getActualHeight() - cellHeight;
 
 			for (int i = 0; i < numberOfCells; i++) {
+				if (i == 0) {
+					cellWidth = firstCellWidth;
+				} else {
+
+					cellWidth = (this.width - 20 - WIDTH_MARGIN * 2 - firstCellWidth) / (numberOfCells - 1);
+				}
+
 				// Setting the non stroking color
-				contentStream.addRect(x, y, cellWidth, cellHeight);
+
+				contentStream.addRect(x, y, cellWidth, 0);
 				contentStream.setLineWidth(lineWidth);
 				contentStream.setNonStrokingColor(Color.WHITE);
-				contentStream.setStrokingColor(Color.BLACK);
+				contentStream.setStrokingColor(headerColor);
 				contentStream.stroke();
-
-				addTableText(contentStream, table.getBody().get(i).get(i), x + 2, y + 5);
+				if (i == 0) {
+					addText(contentStream, table.getBody().get(i).get(i), x + 2, y + 5, Color.BLACK, 10);
+				} else {
+					addTextRight(contentStream, table.getBody().get(i).get(i), cellWidth + x - 2, y + 5, Color.BLACK, 10);
+				}
 
 				x += cellWidth;
 			}
@@ -194,7 +289,74 @@ public class PDFService {
 			// Drawing a rectangle
 			contentStream.fill();
 		}
-		contentStream.setNonStrokingColor(Color.BLACK);
-		decreaseActualHeight(0);
 	}
+
+	private void addTotals(PDFTable table, PDPageContentStream contentStream) throws IOException {
+		float cellHeight = 20;
+		float lineWidth = 1;
+		int numberOfCells = table.getColsCount();
+		float cellWidth = (this.width - WIDTH_MARGIN * 2) / numberOfCells;
+		float firstCellWidth = 300;
+
+		// Añadir cuerpo
+		for (int rowCount = 0; rowCount < 3; rowCount++) {
+
+			String title = "";
+			switch (rowCount) {
+			case 0:
+				title = "Subtotal";
+				break;
+			case 1:
+				title = "IVA";
+				break;
+			case 2:
+				title = "Total";
+				break;
+			default:
+				title = "No definido";
+				break;
+			}
+
+			float x = WIDTH_MARGIN + 10;
+			float y = getActualHeight() - cellHeight;
+
+			for (int i = 0; i < numberOfCells; i++) {
+				if (i == 0) {
+					cellWidth = firstCellWidth;
+				} else {
+
+					cellWidth = (this.width - 20 - WIDTH_MARGIN * 2 - firstCellWidth) / (numberOfCells - 1);
+				}
+
+				// Setting the non stroking color
+
+				contentStream.addRect(x, y, cellWidth, 0);
+				contentStream.setLineWidth(lineWidth);
+				contentStream.setNonStrokingColor(Color.WHITE);
+
+				if (i < numberOfCells - 2) {
+					contentStream.setStrokingColor(Color.WHITE);
+				} else {
+					contentStream.setStrokingColor(headerColor);
+				}
+
+				contentStream.stroke();
+				if (i >= numberOfCells - 2) {
+					if (i == numberOfCells - 2) {
+						addTextRight(contentStream, title, cellWidth + x - 2, y + 5, headerColor, 10);
+					}else {
+						addTextRight(contentStream, "100000", cellWidth + x - 2, y + 5, Color.BLACK, 10);
+
+					}
+				}
+				x += cellWidth;
+			}
+
+			decreaseActualHeightWithoutDel(cellHeight);
+
+			// Drawing a rectangle
+			contentStream.fill();
+		}
+	}
+
 }
